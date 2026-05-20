@@ -273,7 +273,26 @@ function checkImageQuality(canvas, type) {
       return result;
     }
 
-    // ── 3. スコア計算 ─────────────────────────
+    // ── 3. パスポート/身分証チェック (エッジ密度) ──
+    if (type === 'id') {
+      let edges = new cv.Mat();
+      cv.Canny(gray, edges, 50, 150);
+      const edgeMean    = cv.mean(edges);
+      const edgeDensity = edgeMean[0]; // 0-255、文字・模様が多いほど高い
+      edges.delete();
+
+      if (edgeDensity < 3) {
+        result = {
+          ok: false, score: 0,
+          message: currentLang === 'en'
+            ? '❌ No document detected. Point camera at your passport/ID.'
+            : '❌ 書類が検出されません。パスポート・身分証をカメラに向けてください。'
+        };
+        return result;
+      }
+    }
+
+    // ── 4. スコア計算 ─────────────────────────
     const brightnessScore = 100 - Math.abs(brightness - 128) / 1.28;
     const sharpnessScore  = Math.min(100, variance / 10);
     const score = Math.round((brightnessScore + sharpnessScore) / 2);
