@@ -118,17 +118,208 @@ function capture(type) {
   canvas.height = videoEl.videoHeight;
   canvas.getContext('2d').drawImage(videoEl, 0, 0);
 
+  // 画質チェック
+  const check = checkImageQuality(canvas, type);
+  if (!check.ok) {
+    showQualityError(type, check.message);
+    return;
+  }
+
+  // 顔写真の場合は顔検出チェック
+  if (type === 'face') {
+    showQualityError(type, currentLang === 'en' ? '⏳ Checking face...' : '⏳ 顔を確認中...');
+    checkFaceDetection(canvas).then(faceCheck => {
+      // エラーメッセージを消す
+      const box = document.getElementById('faceCameraBox');
+      const el  = box.querySelector('.quality-error');
+      if (el) el.remove();
+
+      if (!faceCheck.ok) {
+        showQualityError(type, faceCheck.message);
+        return;
+      }
+      finishCapture(type, canvas, faceCheck.score);
+    });
+    return;
+  }
+
+  finishCapture(type, canvas, check.score);
+}
+
+// ─── 撮影完了処理 ─────────────────────────────
+function finishCapture(type, canvas, score) {
+  const preview  = document.getElementById(`${type}Preview`);
+  const videoEl  = document.getElementById(`${type}Video`);
+  const shootBtn = document.getElementById(`shoot${capitalize(type)}`);
+  const retryBtn = document.getElementById(`retry${capitalize(type)}`);
+  const nextBtn  = document.getElementById(`step${type === 'id' ? 2 : 3}Next`);
+
   const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
   captures[type] = dataUrl;
 
-  // プレビュー表示
   preview.src = dataUrl;
   preview.classList.remove('hidden');
   videoEl.classList.add('hidden');
-
   shootBtn.classList.add('hidden');
   retryBtn.classList.remove('hidden');
   if (nextBtn) nextBtn.style.display = '';
+
+  showQualityBadge(type, score);
+}
+
+// ─── 顔検出チェック (face-api.js) ────────────
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+let faceModelsLoaded = false;
+
+async function loadFaceModels() {
+  if (faceModelsLoaded) return;
+  if (typeof faceapi === 'undefined') return;
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  faceModelsLoaded = true;
+}
+
+async function checkFaceDetection(canvas) {
+  try {
+    if (typeof faceapi === 'undefined') {
+      return { ok: true, score: 80, message: '' };
+    }
+    await loadFaceModels();
+
+    const options    = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 });
+    const detections = await faceapi.detectAllFaces(canvas, options);
+
+    if (detections.length === 0) {
+      return {
+        ok: false,
+        score: 0,
+        message: currentLang === 'en'
+          ? '❌ No face detected. Look at the camera.'
+          : '❌ 顔が検出されませんでした。カメラを正面から見てください。'
+      };
+    }
+
+    if (detections.length > 1) {
+      return {
+        ok: false,
+        score: 0,
+        message: currentLang === 'en'
+          ? '❌ Multiple faces detected. Only one person please.'
+          : '❌ 複数の顔が検出されました。1人で撮影してください。'
+      };
+    }
+
+    const det   = detections[0];
+    const score = Math.round(det.score * 100);
+
+    // 顔のサイズチェック（小さすぎないか）
+    const faceArea   = det.box.width * det.box.height;
+    const canvasArea = canvas.width * canvas.height;
+    const faceRatio  = faceArea / canvasArea;
+
+    if (faceRatio < 0.05) {
+      return {
+        ok: false,
+        score: 0,
+        message: currentLang === 'en'
+          ? '❌ Face too small. Move closer to the camera.'
+          : '❌ 顔が小さすぎます。カメラに近づいてください。'
+      };
+    }
+
+    return { ok: true, score, message: '' };
+
+  } catch(e) {
+    return { ok: true, score: 80, message: '' };
+  }
+}
+function checkImageQuality(canvas, type) {
+  // OpenCV未ロードの場合はスキップ
+  if (typeof cv === 'undefined' || !cv.Mat) {
+    return { ok: true, score: 100, message: '' };
+  }
+
+  let src  = cv.imread(canvas);
+  let gray = new cv.Mat();
+  let result = { ok: true, score: 100, message: '' };
+
+  try {
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+    // ── 1. 明るさチェック ──────────────────────
+    const mean = cv.mean(gray);
+    const brightness = mean[0]; // 0-255
+    if (brightness < 40) {
+      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Too dark. Please improve lighting.' : '❌ 暗すぎます。明るい場所で撮影してください。' };
+      return result;
+    }
+    if (brightness > 230) {
+      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Too bright. Avoid direct light.' : '❌ 明るすぎます。光の当たりを調整してください。' };
+      return result;
+    }
+
+    // ── 2. ぼけチェック (ラプラシアン分散) ────
+    let lap = new cv.Mat();
+    cv.Laplacian(gray, lap, cv.CV_64F);
+    const lapMean = cv.mean(lap);
+    // 分散を計算
+    let lapSq = new cv.Mat();
+    cv.multiply(lap, lap, lapSq);
+    const lapSqMean = cv.mean(lapSq);
+    const variance = lapSqMean[0] - lapMean[0] * lapMean[0];
+    lap.delete(); lapSq.delete();
+
+    if (variance < 100) {
+      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Image is blurry. Hold the camera steady.' : '❌ ぼけています。カメラを動かさずに撮影してください。' };
+      return result;
+    }
+
+    // ── 3. スコア計算 ─────────────────────────
+    const brightnessScore = 100 - Math.abs(brightness - 128) / 1.28;
+    const sharpnessScore  = Math.min(100, variance / 10);
+    const score = Math.round((brightnessScore + sharpnessScore) / 2);
+
+    result = { ok: true, score, message: '' };
+
+  } catch(e) {
+    result = { ok: true, score: 80, message: '' };
+  } finally {
+    src.delete(); gray.delete();
+  }
+
+  return result;
+}
+
+// 品質エラー表示
+function showQualityError(type, message) {
+  const box = document.getElementById(`${type}CameraBox`);
+  let el = box.querySelector('.quality-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'quality-error';
+    el.style.cssText = 'position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(192,57,43,.9);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;white-space:nowrap;z-index:10;';
+    box.appendChild(el);
+  }
+  el.textContent = message;
+  setTimeout(() => el.remove(), 3000);
+}
+
+// 品質バッジ表示
+function showQualityBadge(type, score) {
+  const wrap = document.getElementById(`${type}CameraBox`).parentElement;
+  let el = wrap.querySelector('.quality-badge');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'quality-badge';
+    el.style.cssText = 'margin-top:6px;font-size:12px;text-align:center;';
+    wrap.appendChild(el);
+  }
+  const color = score >= 80 ? '#3ecf8e' : score >= 60 ? '#fbbf24' : '#f87171';
+  const label = score >= 80
+    ? (currentLang === 'en' ? '✅ Good quality' : '✅ 品質良好')
+    : score >= 60
+    ? (currentLang === 'en' ? '⚠ Acceptable' : '⚠ 品質普通')
+    : (currentLang === 'en' ? '❌ Poor quality' : '❌ 品質不良');
+  el.innerHTML = `<span style="color:${color};font-weight:500;">${label}</span> <span style="color:#888;">(スコア: ${score})</span>`;
 }
 
 // ─── 撮り直し ──────────────────────────────────
