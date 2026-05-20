@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>管理者ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body class="admin-body">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">CASA VERDE<br/><small>管理システム</small></div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active">📋 チェックイン一覧</a>
+      <a href="index.html" class="nav-item">📥 チェックインフォーム</a>
+    </nav>
+    <div class="sidebar-settings">
+      <button class="btn-settings" onclick="showSettings()">⚙ 設定</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+
+    <header class="admin-header">
+      <h1>チェックイン一覧</h1>
+      <div class="header-actions">
+        <input type="date" id="filterDate" onchange="filterRecords()"/>
+        <select id="filterRoom" onchange="filterRecords()">
+          <option value="">全部屋</option>
+          <option value="101">101</option>
+          <option value="102">102</option>
+          <option value="201">201</option>
+          <option value="202">202</option>
+        </select>
+        <button class="btn-refresh" onclick="loadRecords()">🔄 更新</button>
+        <button class="btn-export" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn-photos" onclick="exportPhotos()">🖼 写真ZIP</button>
+      </div>
+    </header>
+
+    <!-- 集計カード -->
+    <div class="stat-cards" id="statCards">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotal">—</div>
+        <div class="stat-label">本日のチェックイン</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statMonth">—</div>
+        <div class="stat-label">今月の宿泊者</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statNations">—</div>
+        <div class="stat-label">国籍数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statOccupied">—</div>
+        <div class="stat-label">現在の利用部屋</div>
+      </div>
+    </div>
+
+    <!-- テーブル -->
+    <div class="table-wrap">
+      <table class="records-table" id="recordsTable">
+        <thead>
+          <tr>
+            <th>登録日時</th>
+            <th>氏名</th>
+            <th>国籍</th>
+            <th>チェックイン</th>
+            <th>チェックアウト</th>
+            <th>部屋</th>
+            <th>人数</th>
+            <th>保存先</th>
+            <th>身分証</th>
+            <th>顔写真</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody">
+          <tr><td colspan="9" class="loading-row">読み込み中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- 設定モーダル -->
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal" style="max-width:520px;">
+      <h3>システム設定</h3>
+
+      <label>Apps Script URL</label>
+      <input type="url" id="gasUrl" placeholder="https://script.google.com/macros/s/xxx/exec"/>
+
+      <label style="margin-top:16px;">通知先メールアドレス</label>
+      <p class="modal-note">チェックイン時に通知するメールアドレスを追加してください</p>
+      <div id="emailList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="email" id="newEmail" placeholder="example@email.com" style="flex:1;"/>
+        <button onclick="addEmail()" class="btn-save" style="white-space:nowrap;">+ 追加</button>
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button onclick="saveSettings()" class="btn-save">保存</button>
+        <button onclick="manualSync()" class="btn-cancel" style="background:rgba(79,156,249,.15);border-color:#4f9cf9;color:#4f9cf9;">🔄 今すぐ同期</button>
+        <button onclick="clearLocalCache()" class="btn-cancel" style="background:rgba(248,113,113,.15);border-color:#f87171;color:#f87171;">🗑 ローカル削除</button>
+        <button onclick="closeSettings()" class="btn-cancel">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 写真モーダル -->
+  <div class="modal-overlay hidden" id="photoModal">
+    <div class="modal photo-modal">
+      <img id="modalPhoto" src="" alt=""/>
+      <button onclick="closePhotoModal()" class="btn-close-modal">✕ 閉じる</button>
+    </div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
