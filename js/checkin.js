@@ -63,14 +63,19 @@ function resetCameraUI(type, cb) {
 
 // ─── バリデーション ────────────────────────────
 function validateStep1() {
-  const required = { guestName: '氏名', nationality: '国籍', checkinDate: 'チェックイン日', checkoutDate: 'チェックアウト日', roomNumber: '部屋番号' };
-  for (const [id, label] of Object.entries(required)) {
+  const checks = [
+    { id: 'guestName',    key: 'err_name' },
+    { id: 'nationality',  key: 'err_nationality' },
+    { id: 'checkinDate',  key: 'err_checkin' },
+    { id: 'checkoutDate', key: 'err_checkout' },
+    { id: 'roomNumber',   key: 'err_room' },
+  ];
+  for (const { id, key } of checks) {
     const el = document.getElementById(id);
     if (!el.value.trim()) {
       el.style.borderColor = '#c0392b';
       el.focus();
-      const msg = currentLang === 'en' ? `Please enter ${label}` : `「${label}」を入力してください`;
-      alert(msg);
+      alert(t(key));
       setTimeout(() => el.style.borderColor = '', 2000);
       return false;
     }
@@ -78,7 +83,7 @@ function validateStep1() {
   const ci = new Date(document.getElementById('checkinDate').value);
   const co = new Date(document.getElementById('checkoutDate').value);
   if (co <= ci) {
-    alert(currentLang === 'en' ? 'Check-out must be after check-in' : 'チェックアウトはチェックイン日より後にしてください');
+    alert(t('err_date'));
     return false;
   }
   return true;
@@ -101,7 +106,7 @@ async function startCamera(type) {
     startBtn.classList.add('hidden');
     shootBtn.classList.remove('hidden');
   } catch (err) {
-    alert((currentLang === 'en' ? 'Camera error: ' : 'カメラエラー: ') + err.message);
+    alert(t('camera_error') + err.message);
   }
 }
 
@@ -127,7 +132,7 @@ function capture(type) {
 
   // 顔写真の場合は顔検出チェック
   if (type === 'face') {
-    showQualityError(type, currentLang === 'en' ? '⏳ Checking face...' : '⏳ 顔を確認中...');
+    showQualityError(type, t('checking_face'));
     checkFaceDetection(canvas).then(faceCheck => {
       // エラーメッセージを消す
       const box = document.getElementById('faceCameraBox');
@@ -189,41 +194,21 @@ async function checkFaceDetection(canvas) {
     const detections = await faceapi.detectAllFaces(canvas, options);
 
     if (detections.length === 0) {
-      return {
-        ok: false,
-        score: 0,
-        message: currentLang === 'en'
-          ? '❌ No face detected. Look at the camera.'
-          : '❌ 顔が検出されませんでした。カメラを正面から見てください。'
-      };
+      return { ok: false, score: 0, message: t('no_face') };
     }
 
     if (detections.length > 1) {
-      return {
-        ok: false,
-        score: 0,
-        message: currentLang === 'en'
-          ? '❌ Multiple faces detected. Only one person please.'
-          : '❌ 複数の顔が検出されました。1人で撮影してください。'
-      };
+      return { ok: false, score: 0, message: t('multi_face') };
     }
 
-    const det   = detections[0];
-    const score = Math.round(det.score * 100);
-
-    // 顔のサイズチェック（小さすぎないか）
+    const det        = detections[0];
+    const score      = Math.round(det.score * 100);
     const faceArea   = det.box.width * det.box.height;
     const canvasArea = canvas.width * canvas.height;
     const faceRatio  = faceArea / canvasArea;
 
     if (faceRatio < 0.05) {
-      return {
-        ok: false,
-        score: 0,
-        message: currentLang === 'en'
-          ? '❌ Face too small. Move closer to the camera.'
-          : '❌ 顔が小さすぎます。カメラに近づいてください。'
-      };
+      return { ok: false, score: 0, message: t('face_small') };
     }
 
     return { ok: true, score, message: '' };
@@ -249,11 +234,11 @@ function checkImageQuality(canvas, type) {
     const mean = cv.mean(gray);
     const brightness = mean[0]; // 0-255
     if (brightness < 40) {
-      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Too dark. Please improve lighting.' : '❌ 暗すぎます。明るい場所で撮影してください。' };
+      result = { ok: false, score: 0, message: t('dark') };
       return result;
     }
     if (brightness > 230) {
-      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Too bright. Avoid direct light.' : '❌ 明るすぎます。光の当たりを調整してください。' };
+      result = { ok: false, score: 0, message: t('bright') };
       return result;
     }
 
@@ -261,7 +246,6 @@ function checkImageQuality(canvas, type) {
     let lap = new cv.Mat();
     cv.Laplacian(gray, lap, cv.CV_64F);
     const lapMean = cv.mean(lap);
-    // 分散を計算
     let lapSq = new cv.Mat();
     cv.multiply(lap, lap, lapSq);
     const lapSqMean = cv.mean(lapSq);
@@ -269,7 +253,7 @@ function checkImageQuality(canvas, type) {
     lap.delete(); lapSq.delete();
 
     if (variance < 100) {
-      result = { ok: false, score: 0, message: currentLang === 'en' ? '❌ Image is blurry. Hold the camera steady.' : '❌ ぼけています。カメラを動かさずに撮影してください。' };
+      result = { ok: false, score: 0, message: t('blurry') };
       return result;
     }
 
@@ -278,16 +262,11 @@ function checkImageQuality(canvas, type) {
       let edges = new cv.Mat();
       cv.Canny(gray, edges, 50, 150);
       const edgeMean    = cv.mean(edges);
-      const edgeDensity = edgeMean[0]; // 0-255、文字・模様が多いほど高い
+      const edgeDensity = edgeMean[0];
       edges.delete();
 
       if (edgeDensity < 3) {
-        result = {
-          ok: false, score: 0,
-          message: currentLang === 'en'
-            ? '❌ No document detected. Point camera at your passport/ID.'
-            : '❌ 書類が検出されません。パスポート・身分証をカメラに向けてください。'
-        };
+        result = { ok: false, score: 0, message: t('no_doc') };
         return result;
       }
     }
@@ -333,12 +312,8 @@ function showQualityBadge(type, score) {
     wrap.appendChild(el);
   }
   const color = score >= 80 ? '#3ecf8e' : score >= 60 ? '#fbbf24' : '#f87171';
-  const label = score >= 80
-    ? (currentLang === 'en' ? '✅ Good quality' : '✅ 品質良好')
-    : score >= 60
-    ? (currentLang === 'en' ? '⚠ Acceptable' : '⚠ 品質普通')
-    : (currentLang === 'en' ? '❌ Poor quality' : '❌ 品質不良');
-  el.innerHTML = `<span style="color:${color};font-weight:500;">${label}</span> <span style="color:#888;">(スコア: ${score})</span>`;
+  const label = score >= 80 ? t('quality_good') : score >= 60 ? t('quality_ok') : t('quality_bad');
+  el.innerHTML = `<span style="color:${color};font-weight:500;">${label}</span> <span style="color:#888;">(${score})</span>`;
 }
 
 // ─── 撮り直し ──────────────────────────────────
@@ -362,14 +337,14 @@ function retryCapture(type) {
 // ─── 確認画面 ─────────────────────────────────
 function buildConfirm() {
   const fields = {
-    [currentLang === 'en' ? 'Full Name' : '氏名']: document.getElementById('guestName').value,
-    [currentLang === 'en' ? 'Nationality' : '国籍']: document.getElementById('nationality').value,
-    [currentLang === 'en' ? 'Date of Birth' : '生年月日']: document.getElementById('dob').value || '—',
-    [currentLang === 'en' ? 'Check-in' : 'チェックイン']: document.getElementById('checkinDate').value,
-    [currentLang === 'en' ? 'Check-out' : 'チェックアウト']: document.getElementById('checkoutDate').value,
-    [currentLang === 'en' ? 'Room' : '部屋']: document.getElementById('roomNumber').value,
-    [currentLang === 'en' ? 'Guests' : '人数']: document.getElementById('guestCount').value + (currentLang === 'en' ? ' person(s)' : '名'),
-    [currentLang === 'en' ? 'Emergency' : '緊急連絡先']: document.getElementById('emergencyContact').value || '—',
+    [t('confirm_name')]:        document.getElementById('guestName').value,
+    [t('confirm_nationality')]: document.getElementById('nationality').value,
+    [t('confirm_dob')]:         document.getElementById('dob').value || '—',
+    [t('confirm_checkin')]:     document.getElementById('checkinDate').value,
+    [t('confirm_checkout')]:    document.getElementById('checkoutDate').value,
+    [t('confirm_room')]:        document.getElementById('roomNumber').value,
+    [t('confirm_guests')]:      document.getElementById('guestCount').value + t('unit_persons'),
+    [t('confirm_emergency')]:   document.getElementById('emergencyContact').value || '—',
   };
 
   document.getElementById('confirmGrid').innerHTML = Object.entries(fields).map(([k, v]) => `
@@ -385,14 +360,14 @@ function buildConfirm() {
 // ─── 送信 ─────────────────────────────────────
 async function submitCheckin() {
   if (!document.getElementById('agreeCheck').checked) {
-    alert(currentLang === 'en' ? 'Please agree to the house rules.' : '宿泊規約に同意してください。');
+    alert(t('err_agree'));
     return;
   }
 
   const status = document.getElementById('submitStatus');
   const btn    = document.getElementById('submitBtn');
   status.className = 'submit-status loading';
-  status.textContent = currentLang === 'en' ? '⏳ Sending data...' : '⏳ データを送信中...';
+  status.textContent = t('sending');
   status.classList.remove('hidden');
   btn.disabled = true;
 
@@ -416,7 +391,7 @@ async function submitCheckin() {
     nextStep('done');
   } catch (err) {
     status.className = 'submit-status error';
-    status.textContent = (currentLang === 'en' ? '❌ Error: ' : '❌ エラー: ') + err.message;
+    status.textContent = '❌ ' + err.message;
     btn.disabled = false;
   }
 }

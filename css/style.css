@@ -23,6 +23,86 @@
 body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
 .hidden { display: none !important; }
 
+/* ========== 言語選択画面 ========== */
+.lang-select-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.lang-select-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 1rem 0 .5rem;
+}
+
+.lang-select-sub {
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 2.5rem;
+}
+
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 480px;
+}
+
+@media (max-width: 400px) {
+  .lang-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.lang-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.25rem .75rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.lang-card:hover {
+  border-color: var(--gold);
+  background: #fdf8ef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(201,168,76,.15);
+}
+
+.lang-flag  { font-size: 2.2rem; }
+.lang-name  { font-size: 15px; font-weight: 600; color: var(--ink); }
+.lang-native { font-size: 11px; color: var(--muted); }
+
+/* 言語切り替えミニボタン */
+.lang-switcher-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: fixed;
+  top: 14px; right: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 100;
+  transition: all .15s;
+}
+.lang-switcher-mini:hover { border-color: var(--gold); color: var(--gold); }
+
 /* ========== GUEST BODY ========== */
 .guest-body {
   background: var(--cream);

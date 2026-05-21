@@ -10,203 +10,237 @@
 </head>
 <body class="guest-body">
 
-  <!-- 言語切り替え -->
-  <div class="lang-switcher">
-    <button class="lang-btn active" data-lang="ja">日本語</button>
-    <span>/</span>
-    <button class="lang-btn" data-lang="en">English</button>
-  </div>
-
   <main class="guest-main">
 
-    <!-- ヘッダー -->
-    <header class="guest-header">
+    <!-- ===== 言語選択画面 ===== -->
+    <section id="langSelect" class="lang-select-screen">
       <div class="property-name">CASA VERDE</div>
-      <h1 class="guest-title" data-ja="チェックイン手続き" data-en="Guest Check-in"></h1>
-      <p class="guest-sub" data-ja="ご宿泊のお手続きをお願いします" data-en="Please complete your check-in"></p>
-    </header>
-
-    <!-- ステップインジケーター -->
-    <div class="step-indicator">
-      <div class="step active" data-step="1">
-        <div class="step-dot"><span>1</span></div>
-        <div class="step-label" data-ja="基本情報" data-en="Info"></div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" data-step="2">
-        <div class="step-dot"><span>2</span></div>
-        <div class="step-label" data-ja="身分証明" data-en="ID"></div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" data-step="3">
-        <div class="step-dot"><span>3</span></div>
-        <div class="step-label" data-ja="顔写真" data-en="Photo"></div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" data-step="4">
-        <div class="step-dot"><span>4</span></div>
-        <div class="step-label" data-ja="確認" data-en="Confirm"></div>
-      </div>
-    </div>
-
-    <!-- ステップ 1: 基本情報 -->
-    <section class="form-panel" id="step1">
-      <h2 class="panel-title" data-ja="宿泊情報を入力してください" data-en="Enter your stay information"></h2>
-
-      <div class="form-grid">
-        <div class="field full">
-          <label data-ja="氏名（パスポート表記）" data-en="Full Name (as in passport)"></label>
-          <input type="text" id="guestName" placeholder="YAMADA TARO" autocomplete="name"/>
-        </div>
-        <div class="field">
-          <label data-ja="国籍" data-en="Nationality"></label>
-          <select id="nationality">
-            <option value="">---</option>
-            <option value="JP">🇯🇵 日本 / Japan</option>
-            <option value="US">🇺🇸 アメリカ / USA</option>
-            <option value="CN">🇨🇳 中国 / China</option>
-            <option value="KR">🇰🇷 韓国 / Korea</option>
-            <option value="TW">🇹🇼 台湾 / Taiwan</option>
-            <option value="HK">🇭🇰 香港 / Hong Kong</option>
-            <option value="FR">🇫🇷 フランス / France</option>
-            <option value="DE">🇩🇪 ドイツ / Germany</option>
-            <option value="GB">🇬🇧 英国 / UK</option>
-            <option value="AU">🇦🇺 オーストラリア / Australia</option>
-            <option value="OTHER" data-ja="その他" data-en="Other">その他 / Other</option>
-          </select>
-        </div>
-        <div class="field">
-          <label data-ja="生年月日" data-en="Date of Birth"></label>
-          <input type="date" id="dob"/>
-        </div>
-        <div class="field">
-          <label data-ja="チェックイン日" data-en="Check-in Date"></label>
-          <input type="date" id="checkinDate"/>
-        </div>
-        <div class="field">
-          <label data-ja="チェックアウト日" data-en="Check-out Date"></label>
-          <input type="date" id="checkoutDate"/>
-        </div>
-        <div class="field">
-          <label data-ja="宿泊人数" data-en="Number of Guests"></label>
-          <input type="number" id="guestCount" min="1" max="20" value="1"/>
-        </div>
-        <div class="field">
-          <label data-ja="部屋番号" data-en="Room Number"></label>
-          <select id="roomNumber">
-            <option value="">---</option>
-            <option value="101">101</option>
-            <option value="102">102</option>
-            <option value="201">201</option>
-            <option value="202">202</option>
-          </select>
-        </div>
-        <div class="field full">
-          <label data-ja="緊急連絡先（電話番号）" data-en="Emergency Contact (Phone)"></label>
-          <input type="tel" id="emergencyContact" placeholder="+81-90-0000-0000"/>
-        </div>
-      </div>
-
-      <button class="btn-next" onclick="nextStep(2)" data-ja="次へ →" data-en="Next →"></button>
-    </section>
-
-    <!-- ステップ 2: 身分証スキャン -->
-    <section class="form-panel hidden" id="step2">
-      <h2 class="panel-title" data-ja="パスポート・身分証を撮影してください" data-en="Scan your Passport / ID"></h2>
-      <p class="panel-note" data-ja="書類全体が画面に収まるように撮影してください" data-en="Make sure the entire document is visible"></p>
-
-      <div class="camera-box" id="idCameraBox">
-        <video id="idVideo" autoplay muted playsinline></video>
-        <canvas id="idCanvas" class="hidden"></canvas>
-        <div class="camera-frame id-frame">
-          <div class="corner tl"></div><div class="corner tr"></div>
-          <div class="corner bl"></div><div class="corner br"></div>
-          <span class="frame-label" data-ja="パスポートをここに合わせてください" data-en="Align passport here"></span>
-        </div>
-        <img id="idPreview" class="preview-img hidden" alt="ID preview"/>
-      </div>
-
-      <div class="camera-controls">
-        <button class="btn-camera" id="startIdCamera" onclick="startCamera('id')" data-ja="📷 カメラ起動" data-en="📷 Start Camera"></button>
-        <button class="btn-shoot hidden" id="shootId" onclick="capture('id')" data-ja="撮影" data-en="Capture"></button>
-        <button class="btn-retry hidden" id="retryId" onclick="retryCapture('id')" data-ja="やり直す" data-en="Retake"></button>
-      </div>
-
-      <div class="step-nav">
-        <button class="btn-back" onclick="nextStep(1)" data-ja="← 戻る" data-en="← Back"></button>
-        <button class="btn-next" id="step2Next" onclick="nextStep(3)" data-ja="次へ →" data-en="Next →"></button>
+      <h1 class="lang-select-title">ようこそ / Welcome</h1>
+      <p class="lang-select-sub">言語を選択してください / Please select your language</p>
+      <div class="lang-grid">
+        <button class="lang-card" onclick="selectLang('ja')">
+          <span class="lang-flag">🇯🇵</span>
+          <span class="lang-name">日本語</span>
+          <span class="lang-native">Japanese</span>
+        </button>
+        <button class="lang-card" onclick="selectLang('en')">
+          <span class="lang-flag">🇺🇸</span>
+          <span class="lang-name">English</span>
+          <span class="lang-native">英語</span>
+        </button>
+        <button class="lang-card" onclick="selectLang('ko')">
+          <span class="lang-flag">🇰🇷</span>
+          <span class="lang-name">한국어</span>
+          <span class="lang-native">Korean</span>
+        </button>
+        <button class="lang-card" onclick="selectLang('zh')">
+          <span class="lang-flag">🇨🇳</span>
+          <span class="lang-name">中文</span>
+          <span class="lang-native">Chinese</span>
+        </button>
+        <button class="lang-card" onclick="selectLang('fr')">
+          <span class="lang-flag">🇫🇷</span>
+          <span class="lang-name">Français</span>
+          <span class="lang-native">French</span>
+        </button>
+        <button class="lang-card" onclick="selectLang('es')">
+          <span class="lang-flag">🇪🇸</span>
+          <span class="lang-name">Español</span>
+          <span class="lang-native">Spanish</span>
+        </button>
       </div>
     </section>
 
-    <!-- ステップ 3: 顔写真 -->
-    <section class="form-panel hidden" id="step3">
-      <h2 class="panel-title" data-ja="顔写真を撮影してください" data-en="Take your portrait photo"></h2>
-      <p class="panel-note" data-ja="正面を向いてください。帽子・サングラスは外してください" data-en="Face the camera. Remove hat and glasses"></p>
+    <!-- ===== チェックイン画面 ===== -->
+    <div id="checkinScreen" class="hidden">
 
-      <div class="camera-box" id="faceCameraBox">
-        <video id="faceVideo" autoplay muted playsinline></video>
-        <canvas id="faceCanvas" class="hidden"></canvas>
-        <div class="camera-frame face-frame">
-          <div class="face-oval"></div>
-          <span class="frame-label" data-ja="顔をここに合わせてください" data-en="Align your face here"></span>
+      <!-- 言語切り替え（小さく） -->
+      <div class="lang-switcher-mini" onclick="showLangSelect()">
+        <span id="currentLangFlag">🇯🇵</span>
+        <span id="currentLangName">日本語</span>
+        <span>▾</span>
+      </div>
+
+      <!-- ヘッダー -->
+      <header class="guest-header">
+        <div class="property-name">CASA VERDE</div>
+        <h1 class="guest-title" data-i18n="title"></h1>
+        <p class="guest-sub" data-i18n="subtitle"></p>
+      </header>
+
+      <!-- ステップインジケーター -->
+      <div class="step-indicator">
+        <div class="step active" data-step="1">
+          <div class="step-dot"><span>1</span></div>
+          <div class="step-label" data-i18n="step1"></div>
         </div>
-        <img id="facePreview" class="preview-img hidden" alt="Face preview"/>
-      </div>
-
-      <div class="camera-controls">
-        <button class="btn-camera" id="startFaceCamera" onclick="startCamera('face')" data-ja="📷 カメラ起動" data-en="📷 Start Camera"></button>
-        <button class="btn-shoot hidden" id="shootFace" onclick="capture('face')" data-ja="撮影" data-en="Capture"></button>
-        <button class="btn-retry hidden" id="retryFace" onclick="retryCapture('face')" data-ja="やり直す" data-en="Retake"></button>
-      </div>
-
-      <div class="step-nav">
-        <button class="btn-back" onclick="nextStep(2)" data-ja="← 戻る" data-en="← Back"></button>
-        <button class="btn-next" id="step3Next" onclick="nextStep(4)" data-ja="次へ →" data-en="Next →"></button>
-      </div>
-    </section>
-
-    <!-- ステップ 4: 確認・送信 -->
-    <section class="form-panel hidden" id="step4">
-      <h2 class="panel-title" data-ja="内容を確認してください" data-en="Please review your information"></h2>
-
-      <div class="confirm-grid" id="confirmGrid"></div>
-
-      <div class="confirm-photos">
-        <div class="confirm-photo-wrap">
-          <p data-ja="身分証" data-en="ID Photo"></p>
-          <img id="confirmId" class="confirm-photo"/>
+        <div class="step-line"></div>
+        <div class="step" data-step="2">
+          <div class="step-dot"><span>2</span></div>
+          <div class="step-label" data-i18n="step2"></div>
         </div>
-        <div class="confirm-photo-wrap">
-          <p data-ja="顔写真" data-en="Portrait"></p>
-          <img id="confirmFace" class="confirm-photo"/>
+        <div class="step-line"></div>
+        <div class="step" data-step="3">
+          <div class="step-dot"><span>3</span></div>
+          <div class="step-label" data-i18n="step3"></div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="4">
+          <div class="step-dot"><span>4</span></div>
+          <div class="step-label" data-i18n="step4"></div>
         </div>
       </div>
 
-      <!-- 利用規約同意 -->
-      <label class="agree-check">
-        <input type="checkbox" id="agreeCheck"/>
-        <span data-ja="宿泊規約に同意します" data-en="I agree to the house rules"></span>
-      </label>
+      <!-- ステップ 1: 基本情報 -->
+      <section class="form-panel" id="step1">
+        <h2 class="panel-title" data-i18n="step1_title"></h2>
+        <div class="form-grid">
+          <div class="field full">
+            <label data-i18n="field_name"></label>
+            <input type="text" id="guestName" autocomplete="name"/>
+          </div>
+          <div class="field">
+            <label data-i18n="field_nationality"></label>
+            <select id="nationality">
+              <option value="">---</option>
+              <option value="JP">🇯🇵 日本 / Japan</option>
+              <option value="US">🇺🇸 アメリカ / USA</option>
+              <option value="CN">🇨🇳 中国 / China</option>
+              <option value="KR">🇰🇷 韓国 / Korea</option>
+              <option value="TW">🇹🇼 台湾 / Taiwan</option>
+              <option value="HK">🇭🇰 香港 / Hong Kong</option>
+              <option value="FR">🇫🇷 フランス / France</option>
+              <option value="DE">🇩🇪 ドイツ / Germany</option>
+              <option value="GB">🇬🇧 英国 / UK</option>
+              <option value="AU">🇦🇺 オーストラリア / Australia</option>
+              <option value="ES">🇪🇸 スペイン / Spain</option>
+              <option value="OTHER">その他 / Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="field_dob"></label>
+            <input type="date" id="dob"/>
+          </div>
+          <div class="field">
+            <label data-i18n="field_checkin"></label>
+            <input type="date" id="checkinDate"/>
+          </div>
+          <div class="field">
+            <label data-i18n="field_checkout"></label>
+            <input type="date" id="checkoutDate"/>
+          </div>
+          <div class="field">
+            <label data-i18n="field_guests"></label>
+            <input type="number" id="guestCount" min="1" max="20" value="1"/>
+          </div>
+          <div class="field">
+            <label data-i18n="field_room"></label>
+            <select id="roomNumber">
+              <option value="">---</option>
+              <option value="101">101</option>
+              <option value="102">102</option>
+              <option value="103">103</option>
+              <option value="104">104</option>
+              <option value="201">201</option>
+              <option value="202">202</option>
+              <option value="203">203</option>
+              <option value="204">204</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label data-i18n="field_emergency"></label>
+            <input type="tel" id="emergencyContact" placeholder="+81-90-0000-0000"/>
+          </div>
+        </div>
+        <button class="btn-next" onclick="nextStep(2)" data-i18n="btn_next"></button>
+      </section>
 
-      <!-- 送信ステータス -->
-      <div class="submit-status hidden" id="submitStatus"></div>
+      <!-- ステップ 2: 身分証スキャン -->
+      <section class="form-panel hidden" id="step2">
+        <h2 class="panel-title" data-i18n="step2_title"></h2>
+        <p class="panel-note" data-i18n="step2_note"></p>
+        <div class="camera-box" id="idCameraBox">
+          <video id="idVideo" autoplay muted playsinline></video>
+          <canvas id="idCanvas" class="hidden"></canvas>
+          <div class="camera-frame id-frame">
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br"></div>
+            <span class="frame-label" data-i18n="id_frame_label"></span>
+          </div>
+          <img id="idPreview" class="preview-img hidden" alt="ID preview"/>
+        </div>
+        <div class="camera-controls">
+          <button class="btn-camera hidden" id="startIdCamera" onclick="startCamera('id')" data-i18n="btn_camera"></button>
+          <button class="btn-shoot hidden" id="shootId" onclick="capture('id')" data-i18n="btn_capture"></button>
+          <button class="btn-retry hidden" id="retryId" onclick="retryCapture('id')" data-i18n="btn_retry"></button>
+        </div>
+        <div class="step-nav">
+          <button class="btn-back" onclick="nextStep(1)" data-i18n="btn_back"></button>
+          <button class="btn-next" id="step2Next" onclick="nextStep(3)" data-i18n="btn_next"></button>
+        </div>
+      </section>
 
-      <div class="step-nav">
-        <button class="btn-back" onclick="nextStep(3)" data-ja="← 戻る" data-en="← Back"></button>
-        <button class="btn-submit" id="submitBtn" onclick="submitCheckin()" data-ja="✓ チェックイン完了" data-en="✓ Complete Check-in"></button>
-      </div>
-    </section>
+      <!-- ステップ 3: 顔写真 -->
+      <section class="form-panel hidden" id="step3">
+        <h2 class="panel-title" data-i18n="step3_title"></h2>
+        <p class="panel-note" data-i18n="step3_note"></p>
+        <div class="camera-box" id="faceCameraBox">
+          <video id="faceVideo" autoplay muted playsinline></video>
+          <canvas id="faceCanvas" class="hidden"></canvas>
+          <div class="camera-frame face-frame">
+            <div class="face-oval"></div>
+            <span class="frame-label" data-i18n="face_frame_label"></span>
+          </div>
+          <img id="facePreview" class="preview-img hidden" alt="Face preview"/>
+        </div>
+        <div class="camera-controls">
+          <button class="btn-camera hidden" id="startFaceCamera" onclick="startCamera('face')" data-i18n="btn_camera"></button>
+          <button class="btn-shoot hidden" id="shootFace" onclick="capture('face')" data-i18n="btn_capture"></button>
+          <button class="btn-retry hidden" id="retryFace" onclick="retryCapture('face')" data-i18n="btn_retry"></button>
+        </div>
+        <div class="step-nav">
+          <button class="btn-back" onclick="nextStep(2)" data-i18n="btn_back"></button>
+          <button class="btn-next" id="step3Next" onclick="nextStep(4)" data-i18n="btn_next"></button>
+        </div>
+      </section>
 
-    <!-- 完了画面 -->
-    <section class="form-panel hidden" id="stepDone">
-      <div class="done-wrap">
-        <div class="done-icon">✓</div>
-        <h2 data-ja="チェックイン完了！" data-en="Check-in Complete!"></h2>
-        <p data-ja="お手続きありがとうございました。ごゆっくりお過ごしください。" data-en="Thank you! We hope you enjoy your stay."></p>
-        <div class="done-room" id="doneRoom"></div>
-        <button class="btn-next" style="margin-top:2rem;" onclick="resetForm()" data-ja="最初に戻る" data-en="Start over"></button>
-      </div>
-    </section>
+      <!-- ステップ 4: 確認 -->
+      <section class="form-panel hidden" id="step4">
+        <h2 class="panel-title" data-i18n="step4_title"></h2>
+        <div class="confirm-grid" id="confirmGrid"></div>
+        <div class="confirm-photos">
+          <div class="confirm-photo-wrap">
+            <p data-i18n="label_id_photo"></p>
+            <img id="confirmId" class="confirm-photo"/>
+          </div>
+          <div class="confirm-photo-wrap">
+            <p data-i18n="label_face_photo"></p>
+            <img id="confirmFace" class="confirm-photo"/>
+          </div>
+        </div>
+        <label class="agree-check">
+          <input type="checkbox" id="agreeCheck"/>
+          <span data-i18n="agree_text"></span>
+        </label>
+        <div class="submit-status hidden" id="submitStatus"></div>
+        <div class="step-nav">
+          <button class="btn-back" onclick="nextStep(3)" data-i18n="btn_back"></button>
+          <button class="btn-submit" id="submitBtn" onclick="submitCheckin()" data-i18n="btn_submit"></button>
+        </div>
+      </section>
+
+      <!-- 完了画面 -->
+      <section class="form-panel hidden" id="stepDone">
+        <div class="done-wrap">
+          <div class="done-icon">✓</div>
+          <h2 data-i18n="done_title"></h2>
+          <p data-i18n="done_msg"></p>
+          <div class="done-room" id="doneRoom"></div>
+          <button class="btn-next" style="margin-top:2rem;" onclick="resetForm()" data-i18n="btn_restart"></button>
+        </div>
+      </section>
+
+    </div><!-- /checkinScreen -->
 
   </main>
 
